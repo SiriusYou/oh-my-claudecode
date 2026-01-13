@@ -22,7 +22,7 @@ Oh-My-ClaudeCode-Sisyphus is an enhancement system for Claude Code (Anthropic's 
 ```
 oh-my-claude-sisyphus/
 ├── src/
-│   ├── agents/              # 15 agent definitions
+│   ├── agents/              # 11 agent definitions
 │   │   ├── definitions.ts   # Agent registry & configs
 │   │   ├── types.ts         # Agent type definitions
 │   │   ├── utils.ts         # Shared utilities

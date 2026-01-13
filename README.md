@@ -82,7 +82,7 @@ The repository is also a Claude Code plugin with this structure:
 oh-my-claude-sisyphus/
 ├── .claude-plugin/
 │   └── plugin.json            # Plugin manifest
-├── agents/                    # 10 specialized subagents
+├── agents/                    # 11 specialized subagents
 ├── commands/                  # 12 slash commands
 ├── skills/                    # 3 skills (ultrawork, git-master, frontend-ui-ux)
 ├── hooks/
@@ -547,7 +547,7 @@ The original oh-my-opencode used multiple AI providers. This port uses Claude mo
 
 | Feature | Description |
 |---------|-------------|
-| **10 Specialized Agents** | Oracle, Librarian, Explore, Frontend Engineer, Document Writer, Multimodal Looker, Momus, Metis, Sisyphus-Junior, Prometheus |
+| **11 Specialized Agents** | Oracle, Librarian, Explore, Frontend Engineer, Document Writer, Multimodal Looker, Momus, Metis, Orchestrator-Sisyphus, Sisyphus-Junior, Prometheus |
 | **18 Lifecycle Hooks** | rules-injector, sisyphus-orchestrator, auto-slash-command, keyword-detector, ralph-loop, todo-continuation, context-window-limit-recovery, preemptive-compaction, session-recovery, directory-readme-injector, comment-checker, thinking-block-validator, empty-message-sanitizer, edit-error-recovery, non-interactive-env, agent-usage-reminder, background-notification, think-mode |
 | **6 Builtin Skills** | sisyphus, orchestrator, ultrawork, ralph-loop, frontend-ui-ux, git-master |
 | **Magic Keywords** | `ultrawork`, `search`, `analyze`, `ultrathink` trigger enhanced modes |
