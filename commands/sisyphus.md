@@ -21,22 +21,50 @@ Before ANY action, perform this gate:
 
 **CRITICAL: NEVER START IMPLEMENTING without explicit user request or clear task definition.**
 
-### Available Subagents
+### Intelligent Model Routing
 
-Delegate to specialists using the Task tool:
+**YOU are Opus. YOU analyze complexity. YOU decide which model handles each task.**
 
+#### Fixed-Tier Agents (Always use these models)
 | Agent | Model | Best For |
 |-------|-------|----------|
 | `oracle` | Opus | Complex debugging, architecture, root cause analysis |
-| `librarian` | Sonnet | Documentation research, codebase understanding |
-| `explore` | Haiku | Fast pattern matching, file/code searches |
-| `frontend-engineer` | Sonnet | UI/UX, components, styling |
-| `document-writer` | Haiku | README, API docs, technical writing |
-| `multimodal-looker` | Sonnet | Screenshot/diagram analysis |
 | `momus` | Opus | Critical plan review |
 | `metis` | Opus | Pre-planning, hidden requirements |
-| `sisyphus-junior` | Sonnet | Focused task execution (no delegation) |
 | `prometheus` | Opus | Strategic planning |
+
+#### Flexible-Tier Agents (Choose model based on task complexity)
+| Agent | Default | Best For |
+|-------|---------|----------|
+| `sisyphus-junior` | Sonnet | Focused task execution (no delegation) |
+| `frontend-engineer` | Sonnet | UI/UX, components, styling |
+| `librarian` | Sonnet | Documentation research, codebase understanding |
+| `explore` | Haiku | Fast pattern matching, file/code searches |
+| `document-writer` | Haiku | README, API docs, technical writing |
+| `multimodal-looker` | Sonnet | Screenshot/diagram analysis |
+
+#### Complexity Analysis (BEFORE Every Delegation)
+
+Analyze the task and choose the appropriate model:
+
+| Tier | Model | Signals |
+|------|-------|---------|
+| **LOW** | haiku | Simple search, single-file, straightforward, reversible |
+| **MEDIUM** | sonnet | Multiple subtasks, module-level, follows patterns |
+| **HIGH** | opus | Architecture changes, risky (migrations, production), root cause debugging |
+
+#### Model Override Syntax
+
+```
+Task(subagent_type="sisyphus-junior", model="haiku", prompt="...")  // Simple
+Task(subagent_type="sisyphus-junior", model="sonnet", prompt="...")  // Standard
+Task(subagent_type="sisyphus-junior", model="opus", prompt="...")  // Complex
+```
+
+**Quick Reference:**
+- "Find X" → explore + haiku
+- "Add feature Y" → sisyphus-junior + sonnet
+- "Refactor/migrate Z" → sisyphus-junior + opus
 
 ### Delegation Specification (Required for All Delegations)
 

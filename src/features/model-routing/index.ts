@@ -71,6 +71,10 @@ export {
 export {
   routeTask,
   routeWithEscalation,
+  getRoutingRecommendation,
+  getModelForTask,
+  analyzeTaskComplexity,
+  isFixedTierAgent,
   escalateModel,
   canEscalate,
   explainRouting,

@@ -137,62 +137,32 @@ export function canEscalate(currentTier: ComplexityTier): boolean {
 }
 
 /**
- * Route with escalation support
- * Returns escalated decision if previous attempts failed
+ * Get routing recommendation for orchestrator
+ *
+ * This is designed for PROACTIVE routing - the orchestrator (Opus) analyzes
+ * task complexity BEFORE delegation and chooses the appropriate model tier.
+ *
+ * NOT reactive escalation - the right model is chosen upfront.
+ */
+export function getRoutingRecommendation(
+  context: RoutingContext,
+  config: Partial<RoutingConfig> = {}
+): RoutingDecision {
+  return routeTask(context, config);
+}
+
+/**
+ * Legacy: Route with escalation support
+ * @deprecated Use getRoutingRecommendation for proactive routing instead.
+ * The orchestrator should analyze complexity upfront, not escalate reactively.
  */
 export function routeWithEscalation(
   context: RoutingContext,
   config: Partial<RoutingConfig> = {}
 ): RoutingDecision {
-  const mergedConfig = { ...DEFAULT_ROUTING_CONFIG, ...config };
-  const previousFailures = context.previousFailures ?? 0;
-
-  // Get initial routing decision
-  const initialDecision = routeTask(context, config);
-
-  // If no failures or escalation disabled, return initial decision
-  if (previousFailures === 0 || !mergedConfig.escalationEnabled) {
-    return initialDecision;
-  }
-
-  // Check if we've exceeded max escalations
-  if (previousFailures > mergedConfig.maxEscalations) {
-    return {
-      ...initialDecision,
-      tier: 'HIGH',
-      model: mergedConfig.tierModels['HIGH'],
-      modelType: 'opus',
-      escalated: true,
-      originalTier: initialDecision.tier,
-      reasons: [
-        ...initialDecision.reasons,
-        `Escalated to max tier after ${previousFailures} failures`,
-      ],
-    };
-  }
-
-  // Escalate based on number of failures
-  let escalatedTier = initialDecision.tier;
-  for (let i = 0; i < previousFailures; i++) {
-    escalatedTier = escalateModel(escalatedTier);
-  }
-
-  if (escalatedTier !== initialDecision.tier) {
-    return {
-      ...initialDecision,
-      tier: escalatedTier,
-      model: mergedConfig.tierModels[escalatedTier],
-      modelType: TIER_TO_MODEL_TYPE[escalatedTier],
-      escalated: true,
-      originalTier: initialDecision.tier,
-      reasons: [
-        ...initialDecision.reasons,
-        `Escalated from ${initialDecision.tier} to ${escalatedTier} after ${previousFailures} failure(s)`,
-      ],
-    };
-  }
-
-  return initialDecision;
+  // Simply return the routing recommendation
+  // Reactive escalation is deprecated - orchestrator decides upfront
+  return routeTask(context, config);
 }
 
 /**
@@ -257,4 +227,107 @@ export function quickTierForAgent(agentType: string): ComplexityTier | null {
   };
 
   return agentTiers[agentType] ?? null;
+}
+
+/**
+ * Check if an agent has a fixed tier (cannot be overridden)
+ */
+export function isFixedTierAgent(agentType: string): boolean {
+  const fixedAgents = ['oracle', 'prometheus', 'momus', 'metis'];
+  return fixedAgents.includes(agentType);
+}
+
+/**
+ * Get recommended model for a flexible-tier agent based on task complexity
+ *
+ * This is the main entry point for orchestrator model routing.
+ * The orchestrator calls this to determine which model to use when delegating.
+ *
+ * @param agentType - The agent to delegate to
+ * @param taskPrompt - The task description
+ * @returns The recommended model type ('haiku', 'sonnet', or 'opus')
+ */
+export function getModelForTask(
+  agentType: string,
+  taskPrompt: string,
+  config: Partial<RoutingConfig> = {}
+): { model: 'haiku' | 'sonnet' | 'opus'; tier: ComplexityTier; reason: string } {
+  // Fixed-tier agents always use their assigned model
+  if (isFixedTierAgent(agentType)) {
+    return {
+      model: 'opus',
+      tier: 'HIGH',
+      reason: `${agentType} is a fixed-tier agent (always Opus)`,
+    };
+  }
+
+  // For explore and document-writer, always use haiku
+  if (agentType === 'explore' || agentType === 'document-writer') {
+    return {
+      model: 'haiku',
+      tier: 'LOW',
+      reason: `${agentType} is optimized for speed (always Haiku)`,
+    };
+  }
+
+  // For flexible agents, analyze complexity
+  const decision = routeTask({ taskPrompt, agentType }, config);
+
+  return {
+    model: decision.modelType as 'haiku' | 'sonnet' | 'opus',
+    tier: decision.tier,
+    reason: decision.reasons[0] ?? 'Complexity analysis',
+  };
+}
+
+/**
+ * Generate a complexity analysis summary for the orchestrator
+ *
+ * Returns a human-readable analysis explaining the routing recommendation.
+ */
+export function analyzeTaskComplexity(
+  taskPrompt: string,
+  agentType?: string
+): {
+  tier: ComplexityTier;
+  model: string;
+  analysis: string;
+  signals: {
+    wordCount: number;
+    hasArchitectureKeywords: boolean;
+    hasRiskKeywords: boolean;
+    estimatedSubtasks: number;
+    impactScope: string;
+  };
+} {
+  const signals = extractAllSignals(taskPrompt, { taskPrompt, agentType });
+  const decision = routeTask({ taskPrompt, agentType });
+
+  const analysis = [
+    `**Tier: ${decision.tier}** → ${decision.model}`,
+    '',
+    '**Why:**',
+    ...decision.reasons.map(r => `- ${r}`),
+    '',
+    '**Signals detected:**',
+    signals.lexical.hasArchitectureKeywords ? '- Architecture keywords (refactor, redesign, etc.)' : null,
+    signals.lexical.hasRiskKeywords ? '- Risk keywords (migration, production, critical)' : null,
+    signals.lexical.hasDebuggingKeywords ? '- Debugging keywords (root cause, investigate)' : null,
+    signals.structural.crossFileDependencies ? '- Cross-file dependencies' : null,
+    signals.structural.impactScope === 'system-wide' ? '- System-wide impact' : null,
+    signals.structural.reversibility === 'difficult' ? '- Difficult to reverse' : null,
+  ].filter(Boolean).join('\n');
+
+  return {
+    tier: decision.tier,
+    model: decision.model,
+    analysis,
+    signals: {
+      wordCount: signals.lexical.wordCount,
+      hasArchitectureKeywords: signals.lexical.hasArchitectureKeywords,
+      hasRiskKeywords: signals.lexical.hasRiskKeywords,
+      estimatedSubtasks: signals.structural.estimatedSubtasks,
+      impactScope: signals.structural.impactScope,
+    },
+  };
 }

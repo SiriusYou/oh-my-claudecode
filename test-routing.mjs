@@ -1,10 +1,15 @@
 /**
  * Test script for model routing
+ *
+ * Tests the PROACTIVE routing approach where the orchestrator (Opus)
+ * analyzes task complexity upfront and delegates to the right model.
  */
 
 import {
   routeTask,
-  routeWithEscalation,
+  getModelForTask,
+  analyzeTaskComplexity,
+  isFixedTierAgent,
   adaptPromptForTier,
   quickTierForAgent,
   explainRouting,
@@ -78,21 +83,39 @@ for (const agent of agents) {
   console.log(`  ${agent}: ${tier} → ${TIER_MODELS[tier]}`);
 }
 
-console.log('\n--- Test 3: Escalation Logic ---\n');
+console.log('\n--- Test 3: Proactive Model Selection (getModelForTask) ---\n');
 
-const escalationPrompt = 'Fix this bug';
-console.log(`Original prompt: "${escalationPrompt}"`);
+const modelTestCases = [
+  // Short prompts → LOW (haiku)
+  { agent: 'sisyphus-junior', prompt: 'Fix this typo in the README', expectedModel: 'haiku' },
+  { agent: 'sisyphus-junior', prompt: 'Add validation to the login form', expectedModel: 'haiku' },  // Short, no risk signals
+  // Module-level work → MEDIUM (sonnet)
+  { agent: 'sisyphus-junior', prompt: 'Refactor the auth module to use OAuth2 and migrate all users', expectedModel: 'sonnet' },  // refactor triggers module-level
+  // Risk keywords → HIGH (opus)
+  { agent: 'sisyphus-junior', prompt: 'Refactor payment system with migration scripts for production data', expectedModel: 'opus' },
+  // Fixed tier agents (always use their model regardless of prompt)
+  { agent: 'oracle', prompt: 'Simple question', expectedModel: 'opus' },
+  { agent: 'explore', prompt: 'Complex architecture analysis', expectedModel: 'haiku' },
+];
 
-for (let failures = 0; failures <= 3; failures++) {
-  const decision = routeWithEscalation({
-    taskPrompt: escalationPrompt,
-    agentType: 'sisyphus-junior',
-    previousFailures: failures,
-  });
-  console.log(`  After ${failures} failures: ${decision.tier} (${decision.model})`);
-  if (decision.escalatedFrom) {
-    console.log(`    Escalated from: ${decision.escalatedFrom}`);
-  }
+console.log('Orchestrator proactively selects model based on task complexity:\n');
+
+for (const test of modelTestCases) {
+  const result = getModelForTask(test.agent, test.prompt);
+  const status = result.model === test.expectedModel ? '✓' : '✗';
+  const color = result.model === test.expectedModel ? '\x1b[32m' : '\x1b[31m';
+  console.log(`${color}${status}\x1b[0m ${test.agent} + "${test.prompt.substring(0, 40)}..."`);
+  console.log(`   → model: ${result.model} (${result.tier})`);
+  console.log(`   → reason: ${result.reason}`);
+  console.log('');
+}
+
+console.log('--- Test 3b: Fixed vs Flexible Tier Agents ---\n');
+
+const allAgents = ['oracle', 'prometheus', 'momus', 'metis', 'explore', 'sisyphus-junior', 'frontend-engineer'];
+for (const agent of allAgents) {
+  const isFixed = isFixedTierAgent(agent);
+  console.log(`  ${agent}: ${isFixed ? 'FIXED (always Opus)' : 'FLEXIBLE (complexity-based)'}`);
 }
 
 console.log('\n--- Test 4: Prompt Adaptation ---\n');
@@ -137,4 +160,21 @@ const explanation = explainRouting({
 });
 console.log(explanation);
 
+console.log('\n--- Test 7: Complexity Analysis Helper ---\n');
+
+const analysisPrompt = 'Refactor the payment processing module to support multiple payment providers and add migration scripts for existing transactions';
+const analysis = analyzeTaskComplexity(analysisPrompt, 'sisyphus-junior');
+
+console.log('Task:', analysisPrompt.substring(0, 60) + '...');
+console.log('\nAnalysis Result:');
+console.log(analysis.analysis);
+console.log('\nKey Signals:');
+console.log(`  - Word count: ${analysis.signals.wordCount}`);
+console.log(`  - Architecture keywords: ${analysis.signals.hasArchitectureKeywords}`);
+console.log(`  - Risk keywords: ${analysis.signals.hasRiskKeywords}`);
+console.log(`  - Estimated subtasks: ${analysis.signals.estimatedSubtasks}`);
+console.log(`  - Impact scope: ${analysis.signals.impactScope}`);
+
 console.log('\n=== All Tests Complete ===');
+console.log('\nSUMMARY: Routing is now PROACTIVE - orchestrator (Opus) analyzes');
+console.log('complexity upfront and delegates with the appropriate model parameter.');
