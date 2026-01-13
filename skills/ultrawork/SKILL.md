@@ -15,20 +15,52 @@ This skill enhances Claude's capabilities by:
 2. **Aggressive Delegation**: Routing tasks to specialist agents immediately
 3. **Background Operations**: Using `run_in_background: true` for long operations
 4. **Persistence Enforcement**: Never stopping until all tasks are verified complete
+5. **Smart Model Routing**: Using tiered agents to save tokens
 
-## Agent Routing
+## Smart Model Routing (CRITICAL - SAVE TOKENS)
 
-| Task Type | Agent | Model |
-|-----------|-------|-------|
-| Complex debugging | oracle | Opus |
-| Documentation research | librarian | Sonnet |
-| Quick searches | explore | Haiku |
-| UI/UX work | frontend-engineer | Sonnet |
-| Technical writing | document-writer | Haiku |
-| Visual analysis | multimodal-looker | Sonnet |
-| Plan review | momus | Opus |
-| Pre-planning | metis | Opus |
-| Strategic planning | prometheus | Opus |
+**Choose tier based on task complexity: LOW (haiku) → MEDIUM (sonnet) → HIGH (opus)**
+
+### Available Agents by Tier
+
+| Domain | LOW (Haiku) | MEDIUM (Sonnet) | HIGH (Opus) |
+|--------|-------------|-----------------|-------------|
+| **Analysis** | `oracle-low` | `oracle-medium` | `oracle` |
+| **Execution** | `sisyphus-junior-low` | `sisyphus-junior` | `sisyphus-junior-high` |
+| **Search** | `explore` | `explore-medium` | - |
+| **Research** | `librarian-low` | `librarian` | - |
+| **Frontend** | `frontend-engineer-low` | `frontend-engineer` | `frontend-engineer-high` |
+| **Docs** | `document-writer` | - | - |
+| **Visual** | - | `multimodal-looker` | - |
+| **Planning** | - | - | `prometheus`, `momus`, `metis` |
+| **Testing** | - | `qa-tester` | - |
+
+### Tier Selection Guide
+
+| Task Complexity | Tier | Examples |
+|-----------------|------|----------|
+| Simple lookups | LOW | "What does this function return?", "Find where X is defined" |
+| Standard work | MEDIUM | "Add error handling", "Implement this feature" |
+| Complex analysis | HIGH | "Debug this race condition", "Refactor auth module across 5 files" |
+
+### Routing Examples
+
+```
+// Simple question → LOW tier (saves tokens!)
+Task(subagent_type="oracle-low", prompt="What does this function return?")
+
+// Standard implementation → MEDIUM tier
+Task(subagent_type="sisyphus-junior", prompt="Add error handling to login")
+
+// Complex refactoring → HIGH tier
+Task(subagent_type="sisyphus-junior-high", prompt="Refactor auth module using JWT across 5 files")
+
+// Quick file lookup → LOW tier
+Task(subagent_type="explore", prompt="Find where UserService is defined")
+
+// Thorough search → MEDIUM tier
+Task(subagent_type="explore-medium", prompt="Find all authentication patterns in the codebase")
+```
 
 ## Background Execution Rules
 

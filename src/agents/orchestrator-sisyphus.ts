@@ -112,7 +112,7 @@ When delegating, your prompt MUST include:
 | Batch-completing multiple todos | Defeats real-time tracking |
 | Short prompts to subagents | Agents fail without context |
 | Trying to implement yourself | You are the ORCHESTRATOR |`,
-  tools: ['Read', 'Grep', 'Glob', 'Bash', 'TodoWrite'],
-  model: 'sonnet',
+  tools: ['Read', 'Grep', 'Glob', 'Task', 'TodoWrite'],
+  model: 'opus',
   metadata: ORCHESTRATOR_SISYPHUS_PROMPT_METADATA,
 };
