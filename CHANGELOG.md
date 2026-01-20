@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.10] - 2026-01-20
+
+### Changed
+
+- **Fully-qualified command names**: Documentation now uses `/oh-my-claudecode:omc-setup` and `/oh-my-claudecode:help` for namespace consistency
+- **Commands folder populated**: All user-facing commands now have full content (copied from skills)
+- **Separated commands vs skills**:
+  - 20 commands (user-facing): analyze, cancel-ralph, cancel-ultraqa, cancel-ultrawork, deepinit, deepsearch, doctor, help, hud, learner, note, omc-setup, plan, ralph, ralph-init, ralplan, release, review, ultraqa, ultrawork
+  - 6 skills-only (internal): orchestrate, frontend-ui-ux, git-master, omc-default, omc-default-global, planner
+- **Consolidated planner into plan**: `planner` is now skill-only; users invoke via `/oh-my-claudecode:plan`
+
+---
+
 ## [3.0.0] - 2026-01-20
 
 ### 🎨 Complete Rebrand - From Mythology to Intuition
