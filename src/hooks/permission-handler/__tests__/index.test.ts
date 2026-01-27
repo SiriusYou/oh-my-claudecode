@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
-import { isSafeCommand, isActiveModeRunning, processPermissionRequest } from '../index';
-import type { PermissionRequestInput } from '../index';
+import { isSafeCommand, isActiveModeRunning, processPermissionRequest } from '../index.js';
+import type { PermissionRequestInput } from '../index.js';
 
 describe('permission-handler', () => {
   describe('isSafeCommand', () => {
