@@ -39,22 +39,46 @@ export * from './constants.js';
 
 export type EnforcementLevel = 'off' | 'warn' | 'strict';
 
+// Config caching (30s TTL)
+let enforcementCache: { level: EnforcementLevel; directory: string; timestamp: number } | null = null;
+const CACHE_TTL_MS = 30_000; // 30 seconds
+
+/**
+ * Clear enforcement level cache (for testing)
+ * @internal
+ */
+export function clearEnforcementCache(): void {
+  enforcementCache = null;
+}
+
 /**
  * Read enforcement level from config
  * Checks: .omc/config.json → ~/.claude/.omc-config.json → default (warn)
  */
 function getEnforcementLevel(directory: string): EnforcementLevel {
+  const now = Date.now();
+
+  // Return cached value if valid
+  if (enforcementCache &&
+      enforcementCache.directory === directory &&
+      (now - enforcementCache.timestamp) < CACHE_TTL_MS) {
+    return enforcementCache.level;
+  }
+
   const localConfig = path.join(directory, '.omc', 'config.json');
   const globalConfig = path.join(os.homedir(), '.claude', '.omc-config.json');
+
+  let level: EnforcementLevel = 'warn'; // Default
 
   for (const configPath of [localConfig, globalConfig]) {
     if (existsSync(configPath)) {
       try {
         const content = readFileSync(configPath, 'utf-8');
         const config = JSON.parse(content);
-        const level = config.delegationEnforcementLevel || config.enforcementLevel;
-        if (['off', 'warn', 'strict'].includes(level)) {
-          return level as EnforcementLevel;
+        const configLevel = config.delegationEnforcementLevel ?? config.enforcementLevel;
+        if (['off', 'warn', 'strict'].includes(configLevel)) {
+          level = configLevel as EnforcementLevel;
+          break; // Found valid level, stop searching
         }
       } catch {
         // Continue to next config
@@ -62,7 +86,9 @@ function getEnforcementLevel(directory: string): EnforcementLevel {
     }
   }
 
-  return 'warn'; // Default
+  // Update cache
+  enforcementCache = { level, directory, timestamp: now };
+  return level;
 }
 
 /**
@@ -345,6 +371,7 @@ export function processOrchestratorPreTool(input: ToolExecuteInput): ToolExecute
         filePath,
         decision: 'allowed',
         reason: 'allowed_path',
+        enforcementLevel,
         sessionId,
       });
     }

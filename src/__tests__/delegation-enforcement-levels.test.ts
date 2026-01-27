@@ -12,6 +12,7 @@ import {
   isAllowedPath,
   isSourceFile,
   isWriteEditTool,
+  clearEnforcementCache,
   type ToolExecuteInput,
 } from '../hooks/omc-orchestrator/index.js';
 import type { AuditEntry } from '../hooks/omc-orchestrator/audit.js';
@@ -56,6 +57,7 @@ const mockReadFileSync = vi.mocked(readFileSync);
 describe('delegation-enforcement-levels', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearEnforcementCache();
     // Default: no config files exist
     mockExistsSync.mockReturnValue(false);
   });
